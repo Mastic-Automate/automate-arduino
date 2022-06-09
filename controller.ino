@@ -4,10 +4,10 @@
 #include <Wire.h>
 SoftwareSerial BT(8, 7); // TX, RX | TX para enviar dados e RX para receber dados. 
 String command = "";
-int rele = 7;
+int rele = 12;
+int buzzer = 10;
 
 StaticJsonBuffer<200> jsonBuffer;
-
 void setUmidade(int umidade){
   
 }
@@ -18,12 +18,23 @@ void executeCommand(String command, String arg){
   }
 }
 
+void alarm() {
+   digitalWrite(buzzer,HIGH);
+      delay(200);
+      digitalWrite(buzzer,LOW);
+      delay(200);
+      digitalWrite(buzzer,HIGH);
+      delay(200);
+      digitalWrite(buzzer,LOW);
+}
+
 void setup()
 {
   Serial.begin(9600);
   Serial.println("Tipo de Comando realizado");
   BT.begin(9600); // HC-05 usually default baud-rate
-  pinMode(rele, OUTPUT);  
+  pinMode(rele, OUTPUT); 
+  pinMode(buzzer, OUTPUT);  
 }
 
 void loop(){
@@ -40,12 +51,24 @@ void loop(){
      Serial.println(arg);
     }
     Serial.println(command);
-        
-    if (command == "F"){
+        digitalWrite(rele,LOW);
+    if (command == "d"){
+      alarm();
+    delay(1000);
       digitalWrite(rele,HIGH);
     }
-    if(command == "B"){
+    if(command == "c"){
       digitalWrite(rele, LOW);
+     
+      alarm();
+    }
+
+     if (command == "e"){
+     digitalWrite(buzzer, HIGH);
+    }
+    if(command == "f"){
+      
+      digitalWrite(buzzer, LOW);
     }
  }
 }
