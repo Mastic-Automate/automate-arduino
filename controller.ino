@@ -9,6 +9,10 @@ int rele = 7;
 int button = 6;
 int val = 0;      // variável para guardar o valor lido
 String umidadeArduino;
+String umidade;
+String calor;
+String vezes;
+int times;
 Servo servo1; 
 //String calor;
 StaticJsonBuffer<200> jsonBuffer;
@@ -17,36 +21,26 @@ void setUmidade(String umidade){
   String log = "Umidade Antiga: "+umidadeArduino;
   umidadeArduino = umidade;
   log = "Umidade nova: "+umidadeArduino;
- // BT.write(log);
+}
 
+void writeString(String stringData){
+  BT.println(stringData);
 }
 
 void executeCommand(String umidade, String arg, int times){
   if(umidade != umidadeArduino) {
     Serial.println("Umidade alterada para: "+umidade);
-    servo(times);
+  
    setUmidade(umidade);
   }
+    delay(500);
+    servo(times);
+    delay(500);
+   writeString("Agora foi. tenho certeza!!");
+    delay(3000);
 }
 
-void writeString(String stringData){
- // for (int i =0; i < stringData.length(); i++) {
-    //BT.write(stringData[i]);
-  //}
 
-  int i = 0;
-  String sendData = stringData;
-  int numberData = sendData.length();
-
-  while (i <= numberData){
-    char oneLetter = sendData[i];
-    BT.write(oneLetter);
-    //BT.print(oneLetter);
-    i++;
-    //delay(50);
-  }
-  //BT.print("");
-}
 
 void regar(boolean val) {
   if(val){
@@ -54,7 +48,7 @@ void regar(boolean val) {
   } else {
     digitalWrite(rele, HIGH);
   }
-  }
+}
 
 void servo(int times) {
   for(times > 0; times--;){
@@ -63,23 +57,26 @@ void servo(int times) {
   // Repassa o angulo ao ServoWrite
   
   // Delay de 15ms para o Servo alcançar a posição
- // delay(5000);
-servo1.write(180); 
-delay(1000); 
+  servo1.write(i); 
+  delay(500);
+ digitalWrite(2,HIGH);
+
+//delay(100); 
  regar(true);
   while (i > 0) {
     //i=map(i, 0, 1023, 0, 180);
   // Repassa o angulo ao ServoWrite
   servo1.write(i); 
   // Delay de 15ms para o Servo alcançar a posição
-  delay(15);
+  delay(7);
   i--;
   }
   regar(false);
   delay(500);
 }
-regar(false);
+//regar(false);
   servo1.write(0); 
+  digitalWrite(2, LOW);
 }
 
 
@@ -87,7 +84,6 @@ void setup()
 {
   Serial.begin(9600);
   Serial.println("Tipo de Comando realizado");
-  BT.write(1000);
   BT.begin(9600); // HC-05 usually default baud-rate
   pinMode(rele, OUTPUT);  
   pinMode(button, INPUT);  
@@ -100,26 +96,13 @@ void setup()
 void loop(){
 
 
-servo1.write(0); 
+
    
    if (Serial.available()){
        digitalWrite(2, HIGH);
+      BT.write(Serial.read());
       
-      String txt = String(Serial.readString());
-      //writeString(txt);
-    
-     JsonObject& root = jsonBuffer.parseObject(txt);
-     String umidade = root["umidade"];
-     String calor = root["calor"];
-     String vezes = root["vezes"];
-     int times = vezes.toInt();
-     executeCommand(umidade, calor,times);
-      Serial.println("Umidade recebida do Serial: "+umidade);
-    Serial.println("Calor recebido do Serial: "+calor);
-              
-      // Serial.println(mensagem);
-      
-       delay(500);
+      // delay(500);
        digitalWrite(2, LOW);
       }
       
@@ -127,15 +110,18 @@ servo1.write(0);
   if (BT.available()){ //Caso aconteça alguma alteração na leitura da porta...
     while(BT.available()){
      delay(15); 
+     Serial.read();
      String c = String(BT.readString()); //Converte os dados recebidos em um caractere.
      command = c;
      JsonObject& root = jsonBuffer.parseObject(c);
-     String umidade = root["umidade"];
-     String calor = root["calor"];
-     String vezes = root["vezes"];
-     int times = vezes.toInt();
-     executeCommand(umidade, calor,times);
-      Serial.println("Umidade recebida do celular: "+umidade);
+     vezes = root["vezes"].as<String>();
+    umidade = root["umidade"].as<String>();
+     calor = root["calor"].as<String>();
+     
+     times = vezes.toInt();
+     executeCommand(umidade,calor,times);
+     delay(1000);
+     Serial.println("Umidade recebida do celular: "+umidade);
     Serial.println("Calor recebido do celular: "+calor);
     } 
  }
