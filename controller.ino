@@ -147,10 +147,13 @@ void loop(){
  valorSensor = analogRead(pinoSensor);
  valorLido = constrain(valorSensor,analogSoloMolhado,analogSoloSeco); //MANTÉM valorLido DENTRO DO INTERVALO (ENTRE analogSoloMolhado E analogSoloSeco)
  valorLido = map(valorLido,analogSoloMolhado,analogSoloSeco,percSoloMolhado,percSoloSeco); //EXECUTA A FUNÇÃO "map" DE ACORDO COM OS PARÂMETROS PASSADOS
+ int ml = (1024 - valorSensor)/70;
  Serial.print("Umidade do solo: "); //IMPRIME O TEXTO NO MONITOR SERIAL
  Serial.print(valorLido); //IMPRIME NO MONITOR SERIAL O PERCENTUAL DE UMIDADE DO SOLO
  Serial.println("%"); //IMPRIME O CARACTERE NO MONITOR SERIAL
  Serial.println(valorSensor);
+  Serial.println("ml:");
+ Serial.println(ml);
  if(valorLido > 70){
   digitalWrite(4, HIGH);
  } else {
