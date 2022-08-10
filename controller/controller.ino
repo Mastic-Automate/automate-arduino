@@ -1,32 +1,37 @@
 #include <ArduinoJson.h>
-//Carrega a biblioteca Servo
-#include "Servo.h"
+#include "Servo.h" //Carrega a biblioteca Servo
 #include <SoftwareSerial.h>
 #include <Wire.h>
+
+
+
 SoftwareSerial BT(10, 11); // TX, RX | TX para enviar dados e RX para receber dados. 
 String command = "";
 int rele = 7;
 int button = 6;
 int val = 0;      // variável para guardar o valor lido
 String umidadeArduino;
+int vezes;
 String umidade;
 String calor;
-String vezes;
-int times;
-Servo servo1; 
+Servo servo1;
+DynamicJsonDocument jsonBuffer(1024); 
 //String calor;
-StaticJsonBuffer<200> jsonBuffer;
 
+
+//function that sets the humidity
 void setUmidade(String umidade){
   String log = "Umidade Antiga: "+umidadeArduino;
   umidadeArduino = umidade;
   log = "Umidade nova: "+umidadeArduino;
 }
 
+//Function that write on the phone with the bluetooth connection
 void writeString(String stringData){
   BT.println(stringData);
 }
 
+//Function that check the humidity
 void executeCommand(String umidade, String arg, int times){
   if(umidade != umidadeArduino) {
     Serial.println("Umidade alterada para: "+umidade);
@@ -41,7 +46,7 @@ void executeCommand(String umidade, String arg, int times){
 }
 
 
-
+//Function that irrigate
 void regar(boolean val) {
   if(val){
   digitalWrite(rele, LOW);
@@ -50,6 +55,7 @@ void regar(boolean val) {
   }
 }
 
+//Function that move the servomotor
 void servo(int times) {
   for(times > 0; times--;){
    
@@ -94,10 +100,6 @@ void setup()
 }
 
 void loop(){
-
-
-
-   
    if (Serial.available()){
        digitalWrite(2, HIGH);
       BT.write(Serial.read());
@@ -113,16 +115,17 @@ void loop(){
      Serial.read();
      String c = String(BT.readString()); //Converte os dados recebidos em um caractere.
      command = c;
-     JsonObject& root = jsonBuffer.parseObject(c);
-     vezes = root["vezes"].as<String>();
-    umidade = root["umidade"].as<String>();
-     calor = root["calor"].as<String>();
+     DeserializationError error = deserializeJson(jsonBuffer, c);
+     if(!error) {
+       umidade = jsonBuffer["umidade"].as<String>();
+       vezes = jsonBuffer["vezes"];
+       calor = jsonBuffer["calor"].as<String>();
+       executeCommand(umidade,calor,vezes);
+       delay(1000);
+       Serial.println("Umidade recebida do celular: "+umidade);
+       Serial.println("Calor recebido do celular: "+calor); 
+     }
      
-     times = vezes.toInt();
-     executeCommand(umidade,calor,times);
-     delay(1000);
-     Serial.println("Umidade recebida do celular: "+umidade);
-    Serial.println("Calor recebido do celular: "+calor);
     } 
  }
 }
