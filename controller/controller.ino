@@ -6,9 +6,9 @@
 int RELE = 7;
 int BUTTON = 6;
 int VAL = 0;      // variável para guardar o VALor lido
-int UMIDADEBD = 0;
-int DIASRELATORIO = 0;
-int RELATORIO[] = {0, 0};
+int HUMIDITYBD = 0;
+int REPORTDAYS = 0;
+int REPORT[] = {0, 0};
 SoftwareSerial BT(10, 11); // TX, RX | TX para enviar dados e RX para receber dados.]
 Servo SERVO1; 
 
@@ -24,7 +24,7 @@ void rotateServo(int times, Servo servo) {
   }
 }
 
-void regar(int times, Servo servo) {
+void irrigate(int times, Servo servo) {
   digitalWrite(RELE, HIGH);
   rotateServo(times, servo);
   digitalWrite(RELE, LOW);
@@ -59,24 +59,27 @@ void loop(){
       DeserializationError error = deserializeJson(jsonDoc, json); //Descompacta o JSON recebido
       
       if(!error) {
-       bool dadosPlanta = jsonDoc["dadosPlanta"].as<bool>(); //Pega o atributo dadosPlanta do JSON
-       bool getRelatorio = jsonDoc["getRelatorio"].as<bool>(); //Pega o atributo dadosPlanta do JSON
+       bool plantData = jsonDoc["plantData"].as<bool>(); //Pega o atributo plantData do JSON
+       bool getReport = jsonDoc["getReport"].as<bool>(); //Pega o atributo plantData do JSON
        
-       if (dadosPlanta){ //SE ESSE ATRIBUTO FOR TRUE, ELE RESETA O RELATÓRIO E COMEÇA A UTILIZAR ESSA NOVA MEDIDA DE UMIDADE
-        UMIDADEBD = jsonDoc["umidade"].as<int>();
-        //RESETA O RELATORIO PARA SEGUIR COM A NOVA UMIDADE
-        RELATORIO[0] = 0;
-        RELATORIO[1] = 0;
-        DIASRELATORIO = 0;
+       if (plantData){ //SE ESSE ATRIBUTO FOR TRUE, ELE RESETA O RELATÓRIO E COMEÇA A UTILIZAR ESSA NOVA MEDIDA DE UMIDADE
+        HUMIDITYBD = jsonDoc["humidity"].as<int>();
+        //RESETA O REPORT PARA SEGUIR COM A NOVA UMIDADE
+        REPORT[0] = 0;
+        REPORT[1] = 0;
+        REPORTDAYS = 0;
         
-       } else if (getRelatorio) {
+       } else if (getReport) {
         String response;
-        if (RELATORIO && UMIDADEBD) {
-          int mediaUmidade = RELATORIO[0] / RELATORIO[1];
-          jsonDoc["mediaUmidade"] = mediaUmidade;
+        int humidityAverage;
+        String error;
+        if (REPORT && HUMIDITYBD) {
+          int humidityAverage = REPORT[0] / REPORT[1];
         } else {
-          jsonDoc["error"] = "Não há umidade inserida ou relatório suficiente para enviar um relatório";
+          error = "Não há umidade inserida ou relatório suficiente para enviar um relatório";
         }
+        jsonDoc["error"] = error;
+        jsonDoc["humidityAverage"] = humidityAverage;
         serializeJson(jsonDoc, response);
         BT.println(response);
        }
@@ -84,18 +87,18 @@ void loop(){
     } 
   }
 
-  int umidade = 0;
-  if (UMIDADEBD) {
+  int humidity = 0;
+  if (HUMIDITYBD) {
     //IMPORTANTE IMPLEMENTAR PARA FUNCIONAR ↙
-    //umidade = LeituraDoSensorDeUmidade();
-    if (umidade < UMIDADEBD) {
-      regar(2, SERVO1);
+    //humidity = LeituraDoSensorDeUmidade();
+    if (humidity < HUMIDITYBD) {
+      irrigate(2, SERVO1);
     }
     float diasLigados = ((((millis() / 1000)/60)/60)/24); //Transforma milissegundos para segundos, depois para minutos, depois para horas e depois para dias
-    if (diasLigados > DIASRELATORIO) {
-      RELATORIO[0] = RELATORIO[0] + umidade;  
-      RELATORIO[1] = RELATORIO[1] + 1;
-      DIASRELATORIO = DIASRELATORIO + 1;
+    if (diasLigados > REPORTDAYS) {
+      REPORT[0] = REPORT[0] + humidity;  
+      REPORT[1] = REPORT[1] + 1;
+      REPORTDAYS = REPORTDAYS + 1;
     }
     delay(5000);
   }
@@ -103,18 +106,25 @@ void loop(){
 
 /**
 MODELO DE JSON RECEBIDO:
-  PARA RECEBER O RELATORIO:
+  PARA RECEBER O REPORT:
 {
-  "getRelatorio": true,
-  "dadosPlanta": false,
-  "umidade": 0,
+  "getReport": true,
+  "plantData": false,
+  "humidity": 0,
 }
   PARA INSERIR A UMIDADE:
 {
-  "getRelatorio": false,
-  "dadosPlanta": true,
-  "umidade": 324,
+  "getReport": false,
+  "plantData": true,
+  "humidity": 324,
 }
 
 O ARDUINO SÓ PODE EXECUTAR UM POR VEZ, NÃO TEM COMO RECCEBER O RELATÓRIO E, AO MESMO TEMPO, ENVIAR OS DADOS DA PLANTA
+
+O ARDUINO ENVIA:
+
+{
+  "error": mensagem de erro ou null,
+  "humidityAverage": a média da umidade ou null,
+}
 */
