@@ -7,8 +7,9 @@ int RELE = 7;
 int BUTTON = 6;
 int VAL = 0;      // variável para guardar o VALor lido
 int HUMIDITYBD = 0;
-int REPORTDAYS = 0;
-int REPORT[] = {0, 0};
+float REPORTDAYS = 0;
+const int CAPACITY = JSON_OBJECT_SIZE(24);
+float REPORT[] = {0, 0};
 SoftwareSerial BT(10, 11); // TX, RX | TX para enviar dados e RX para receber dados.]
 Servo SERVO1; 
 
@@ -42,7 +43,7 @@ void setup() {
 }
 
 void loop(){
-  DynamicJsonDocument jsonDoc(1024);
+  StaticJsonDocument<CAPACITY> jsonDoc;
   
   if (Serial.available()){
     digitalWrite(2, HIGH);
@@ -52,16 +53,15 @@ void loop(){
   //Leitura da porta serial via bluetooth
   if (BT.available()){ //Caso aconteça alguma alteração na leitura da porta...
     while(BT.available()){
-      
       delay(15); 
       Serial.read();
       String json = String(BT.readString()); //Converte os dados recebidos em uma String.
       DeserializationError error = deserializeJson(jsonDoc, json); //Descompacta o JSON recebido
-      
+      Serial.println("Erro em baixo: ");
+      Serial.println(error.c_str());
       if(!error) {
        bool plantData = jsonDoc["plantData"].as<bool>(); //Pega o atributo plantData do JSON
        bool getReport = jsonDoc["getReport"].as<bool>(); //Pega o atributo plantData do JSON
-       
        if (plantData){ //SE ESSE ATRIBUTO FOR TRUE, ELE RESETA O RELATÓRIO E COMEÇA A UTILIZAR ESSA NOVA MEDIDA DE UMIDADE
         HUMIDITYBD = jsonDoc["humidity"].as<int>();
         //RESETA O REPORT PARA SEGUIR COM A NOVA UMIDADE
@@ -74,10 +74,21 @@ void loop(){
         int humidityAverage;
         String error;
         if (REPORT && HUMIDITYBD) {
-          int humidityAverage = REPORT[0] / REPORT[1];
+          float humidityReport = REPORT[0];
+          float timesCount = REPORT[1];
+          float humidityAverage = humidityReport / timesCount;
+          Serial.println("dividiu");
         } else {
           error = "Não há umidade inserida ou relatório suficiente para enviar um relatório";
         }
+        deserializeJson(jsonDoc, "{}");
+        Serial.println("Media da umidade, seguido do report 0 e report 1");
+        Serial.println(humidityAverage);
+        Serial.println(REPORT[0]);
+        Serial.println(REPORT[1]);
+        int conta = 200 /1;
+        Serial.println("200 / 1");
+        Serial.println(conta);
         jsonDoc["error"] = error;
         jsonDoc["humidityAverage"] = humidityAverage;
         serializeJson(jsonDoc, response);
@@ -87,17 +98,25 @@ void loop(){
     } 
   }
 
-  int humidity = 0;
+  int humidity = 200;
   if (HUMIDITYBD) {
     //IMPORTANTE IMPLEMENTAR PARA FUNCIONAR ↙
-    //humidity = LeituraDoSensorDeUmidade();
     if (humidity < HUMIDITYBD) {
       irrigate(2, SERVO1);
     }
-    float diasLigados = ((((millis() / 1000)/60)/60)/24); //Transforma milissegundos para segundos, depois para minutos, depois para horas e depois para dias
+    float segundosLigados = millis() / 1000; 
+    float minutosLigados = segundosLigados / 60; 
+    float horasLigados = minutosLigados / 60; 
+    float diasLigados =  horasLigados / 24; //Transforma milissegundos para segundos, depois para minutos, depois para horas e depois para dias
+    Serial.println("segundosLigados");
+    Serial.println(segundosLigados);
+    Serial.println("diasLigados");
+    Serial.println(diasLigados);
+    Serial.println("Dias de Reportados");
+    Serial.println(REPORTDAYS);
     if (diasLigados > REPORTDAYS) {
-      REPORT[0] = REPORT[0] + humidity;  
       REPORT[1] = REPORT[1] + 1;
+      REPORT[0] = REPORT[0] + humidity;  
       REPORTDAYS = REPORTDAYS + 1;
     }
     delay(5000);
@@ -118,11 +137,8 @@ MODELO DE JSON RECEBIDO:
   "plantData": true,
   "humidity": 324,
 }
-
 O ARDUINO SÓ PODE EXECUTAR UM POR VEZ, NÃO TEM COMO RECCEBER O RELATÓRIO E, AO MESMO TEMPO, ENVIAR OS DADOS DA PLANTA
-
 O ARDUINO ENVIA:
-
 {
   "error": mensagem de erro ou null,
   "humidityAverage": a média da umidade ou null,
