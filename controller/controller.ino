@@ -9,7 +9,7 @@ int VAL = 0;      // variável para guardar o VALor lido
 int HUMIDITYBD = 0;
 float REPORTDAYS = 0;
 const int CAPACITY = JSON_OBJECT_SIZE(24);
-float REPORT[] = {0, 0};
+int REPORT[] = {0, 0};
 SoftwareSerial BT(10, 11); // TX, RX | TX para enviar dados e RX para receber dados.]
 Servo SERVO1; 
 
@@ -71,13 +71,10 @@ void loop(){
         
        } else if (getReport) {
         String response;
-        int humidityAverage;
         String error;
+        float humidityAverage;
         if (REPORT && HUMIDITYBD) {
-          float humidityReport = REPORT[0];
-          float timesCount = REPORT[1];
-          float humidityAverage = humidityReport / timesCount;
-          Serial.println("dividiu");
+          humidityAverage = REPORT[0] / REPORT[1];
         } else {
           error = "Não há umidade inserida ou relatório suficiente para enviar um relatório";
         }
@@ -86,9 +83,6 @@ void loop(){
         Serial.println(humidityAverage);
         Serial.println(REPORT[0]);
         Serial.println(REPORT[1]);
-        int conta = 200 /1;
-        Serial.println("200 / 1");
-        Serial.println(conta);
         jsonDoc["error"] = error;
         jsonDoc["humidityAverage"] = humidityAverage;
         serializeJson(jsonDoc, response);
@@ -104,17 +98,13 @@ void loop(){
     if (humidity < HUMIDITYBD) {
       irrigate(2, SERVO1);
     }
-    float segundosLigados = millis() / 1000; 
-    float minutosLigados = segundosLigados / 60; 
-    float horasLigados = minutosLigados / 60; 
-    float diasLigados =  horasLigados / 24; //Transforma milissegundos para segundos, depois para minutos, depois para horas e depois para dias
-    Serial.println("segundosLigados");
-    Serial.println(segundosLigados);
-    Serial.println("diasLigados");
-    Serial.println(diasLigados);
+    float secondsOn = millis() / 1000; 
+    float minutesOn = secondsOn / 60; 
+    float hoursOn = minutesOn / 60; 
+    float daysOn = hoursOn / 24; //Transforma milissegundos para segundos, depois para minutos, depois para horas e depois para dias
     Serial.println("Dias de Reportados");
     Serial.println(REPORTDAYS);
-    if (diasLigados > REPORTDAYS) {
+    if (daysOn > REPORTDAYS) {
       REPORT[1] = REPORT[1] + 1;
       REPORT[0] = REPORT[0] + humidity;  
       REPORTDAYS = REPORTDAYS + 1;
