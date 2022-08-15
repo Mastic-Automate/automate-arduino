@@ -9,7 +9,7 @@ int VAL = 0;      // variável para guardar o VALor lido
 int HUMIDITYBD = 0;
 float REPORTDAYS = 0;
 const int CAPACITY = JSON_OBJECT_SIZE(24);
-int REPORT[] = {0, 0};
+int REPORT[] = {0, 0, 0};
 SoftwareSerial BT(10, 11); // TX, RX | TX para enviar dados e RX para receber dados.]
 Servo SERVO1; 
 
@@ -32,6 +32,7 @@ void irrigate(int times, Servo servo) {
 }
 
 void setup() {
+  
   Serial.begin(9600);
   SERVO1.attach(5); 
   BT.begin(9600); // HC-05 usually default baud-rate
@@ -40,6 +41,7 @@ void setup() {
   pinMode(BUTTON, INPUT);  
   pinMode(2, OUTPUT); //led que indica transmissão de dados para o celular 
   pinMode(A0, INPUT);
+  Serial.println("RODOU");
 }
 
 void loop(){
@@ -67,24 +69,24 @@ void loop(){
         //RESETA O REPORT PARA SEGUIR COM A NOVA UMIDADE
         REPORT[0] = 0;
         REPORT[1] = 0;
+        REPORT[2] = 0;
         REPORTDAYS = 0;
         
        } else if (getReport) {
         String response;
         String error;
         float humidityAverage;
+        int wateredDays;
         if (REPORT && HUMIDITYBD) {
           humidityAverage = REPORT[0] / REPORT[1];
+          wateredDays = REPORT[2];
         } else {
           error = "Não há umidade inserida ou relatório suficiente para enviar um relatório";
         }
         deserializeJson(jsonDoc, "{}");
-        Serial.println("Media da umidade, seguido do report 0 e report 1");
-        Serial.println(humidityAverage);
-        Serial.println(REPORT[0]);
-        Serial.println(REPORT[1]);
         jsonDoc["error"] = error;
         jsonDoc["humidityAverage"] = humidityAverage;
+        jsonDoc["wateredDays"] = wateredDays;
         serializeJson(jsonDoc, response);
         BT.println(response);
        }
@@ -92,11 +94,12 @@ void loop(){
     } 
   }
 
-  int humidity = 200;
+  int humidity = 2;
   if (HUMIDITYBD) {
-    //IMPORTANTE IMPLEMENTAR PARA FUNCIONAR ↙
+    //IMPORTANTE IMPLEMENTAR FUNÇÃO DE LER UMIDADE PARA FUNCIONAR ↙
     if (humidity < HUMIDITYBD) {
       irrigate(2, SERVO1);
+      REPORT[2] = REPORT[2] + 1;
     }
     float secondsOn = millis() / 1000; 
     float minutesOn = secondsOn / 60; 
@@ -109,7 +112,7 @@ void loop(){
       REPORT[0] = REPORT[0] + humidity;  
       REPORTDAYS = REPORTDAYS + 1;
     }
-    delay(5000);
+    //delay(5000);
   }
 }
 
@@ -132,5 +135,6 @@ O ARDUINO ENVIA:
 {
   "error": mensagem de erro ou null,
   "humidityAverage": a média da umidade ou null,
+  "wateredDays": a quantidade de vezes que a planta foi regada ou null
 }
 */
