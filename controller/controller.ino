@@ -61,6 +61,8 @@ void loop(){
       DeserializationError error = deserializeJson(jsonDoc, json); //Descompacta o JSON recebido
       Serial.println("Erro em baixo: ");
       Serial.println(error.c_str());
+      String response;
+      String errorText = error.c_str();
       if(!error) {
        bool plantData = jsonDoc["plantData"].as<bool>(); //Pega o atributo plantData do JSON
        bool getReport = jsonDoc["getReport"].as<bool>(); //Pega o atributo plantData do JSON
@@ -71,26 +73,27 @@ void loop(){
         REPORT[1] = 0;
         REPORT[2] = 0;
         REPORTDAYS = 0;
-        
+        deserializeJson(jsonDoc, "{}");
        } else if (getReport) {
-        String response;
-        String error;
-        float humidityAverage;
-        int wateredDays;
+        float humidityAverage = 0;
+        int wateredTimes = 0;
         if (REPORT && HUMIDITYBD) {
           humidityAverage = REPORT[0] / REPORT[1];
-          wateredDays = REPORT[2];
+          wateredTimes = REPORT[2];
         } else {
-          error = "Não há umidade inserida ou relatório suficiente para enviar um relatório";
+          errorText = "noData";  
         }
         deserializeJson(jsonDoc, "{}");
-        jsonDoc["error"] = error;
         jsonDoc["humidityAverage"] = humidityAverage;
-        jsonDoc["wateredDays"] = wateredDays;
-        serializeJson(jsonDoc, response);
-        BT.println(response);
+        jsonDoc["wateredTimes"] = wateredTimes;
+        
        }
+      } else {
+        deserializeJson(jsonDoc, "{}");  
       }
+      jsonDoc["error"] = errorText;
+      serializeJson(jsonDoc, response);
+      BT.println(response);
     } 
   }
 
@@ -135,6 +138,6 @@ O ARDUINO ENVIA:
 {
   "error": mensagem de erro ou null,
   "humidityAverage": a média da umidade ou null,
-  "wateredDays": a quantidade de vezes que a planta foi regada ou null
+  "wateredTimes": a quantidade de vezes que a planta foi regada ou null
 }
 */
