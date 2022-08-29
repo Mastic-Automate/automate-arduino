@@ -3,7 +3,12 @@
 #include <SoftwareSerial.h>
 #include <Wire.h>
 
-int RELE = 7;
+int DRY_SOIL = 1030; //VALOR MEDIDO COM O SOLO SECO (VOCÊ PODE FAZER TESTES E AJUSTAR ESTE VALOR)
+int WET_SOIL = 320; //VALOR MEDIDO COM O SOLO MOLHADO (VOCÊ PODE FAZER TESTES E AJUSTAR ESTE VALOR)
+int ZERO_PERCENT = 0;
+int ONE_HUNDRED_PERCENT = 100;
+
+int WATER_BOMB = 3;
 int BUTTON = 6;
 int VAL = 0;      // variável para guardar o VALor lido
 int HUMIDITYBD = 0;
@@ -26,32 +31,25 @@ void rotateServo(int times, Servo servo) {
 }
 
 void irrigate(int times, Servo servo) {
-  digitalWrite(RELE, HIGH);
+  digitalWrite(WATER_BOMB, 255);
   rotateServo(times, servo);
-  digitalWrite(RELE, LOW);
+  digitalWrite(WATER_BOMB, LOW);
 }
 
 void setup() {
-  
   Serial.begin(9600);
-  SERVO1.attach(5); 
   BT.begin(9600); // HC-05 usually default baud-rate
-  pinMode(RELE, OUTPUT);  
-  //digitalWrite(RELE, HIGH);
+  SERVO1.attach(5); 
+  pinMode(WATER_BOMB, OUTPUT);  
   pinMode(BUTTON, INPUT);  
-  pinMode(2, OUTPUT); //led que indica transmissão de dados para o celular 
   pinMode(A0, INPUT);
   Serial.println("RODOU");
 }
 
 void loop(){
   StaticJsonDocument<CAPACITY> jsonDoc;
+  delay(1000);
   
-  if (Serial.available()){
-    digitalWrite(2, HIGH);
-    BT.write(Serial.read());
-    digitalWrite(2, LOW);
-  }
   //Leitura da porta serial via bluetooth
   if (BT.available()){ //Caso aconteça alguma alteração na leitura da porta...
     while(BT.available()){
@@ -96,10 +94,13 @@ void loop(){
       BT.println(response);
     } 
   }
-
-  int humidity = 2;
+  
   if (HUMIDITYBD) {
     //IMPORTANTE IMPLEMENTAR FUNÇÃO DE LER UMIDADE PARA FUNCIONAR ↙
+    int sensorRead = analogRead(A0);
+    float humidity = map(sensorRead,WET_SOIL,DRY_SOIL,ONE_HUNDRED_PERCENT,ZERO_PERCENT); // tá em porcentagem
+    Serial.println(humidity);
+    delay(1000);
     if (humidity < HUMIDITYBD) {
       irrigate(2, SERVO1);
       REPORT[2] = REPORT[2] + 1;
