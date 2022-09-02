@@ -1,5 +1,4 @@
 #include <ArduinoJson.h>
-#include "Servo.h" //Carrega a biblioteca Servo
 #include <SoftwareSerial.h>
 #include <Wire.h>
 
@@ -13,33 +12,19 @@ int BUTTON = 6;
 int VAL = 0;      // variável para guardar o VALor lido
 int HUMIDITYBD = 0;
 float REPORTDAYS = 0;
-const int CAPACITY = JSON_OBJECT_SIZE(24);
+const int CAPACITY = JSON_OBJECT_SIZE(18);
 int REPORT[] = {0, 0, 0};
 SoftwareSerial BT(10, 11); // TX, RX | TX para enviar dados e RX para receber dados.]
-Servo SERVO1; 
 
-//BT.println(stringData);
-
-//Function that move the servomotor
-void rotateServo(int times, Servo servo) {
-  for(times > 0; times--;){
-    servo.write(180); 
-    delay(500);
-    servo.write(0); 
-    delay(500);
-  }
-}
-
-void irrigate(int times, Servo servo) {
+void irrigate(int times) {
   digitalWrite(WATER_BOMB, 255);
-  rotateServo(times, servo);
+  delay(times);
   digitalWrite(WATER_BOMB, LOW);
 }
 
 void setup() {
   Serial.begin(9600);
   BT.begin(9600); // HC-05 usually default baud-rate
-  SERVO1.attach(5); 
   pinMode(WATER_BOMB, OUTPUT);  
   pinMode(BUTTON, INPUT);  
   pinMode(A0, INPUT);
@@ -48,17 +33,17 @@ void setup() {
 
 void loop(){
   StaticJsonDocument<CAPACITY> jsonDoc;
-  delay(1000);
   
   //Leitura da porta serial via bluetooth
   if (BT.available()){ //Caso aconteça alguma alteração na leitura da porta...
     while(BT.available()){
-      delay(15); 
       Serial.read();
+      delay(15);
       String json = String(BT.readString()); //Converte os dados recebidos em uma String.
       DeserializationError error = deserializeJson(jsonDoc, json); //Descompacta o JSON recebido
       Serial.println("Erro em baixo: ");
       Serial.println(error.c_str());
+      Serial.println(json);
       String response;
       String errorText = error.c_str();
       if(!error) {
@@ -100,9 +85,8 @@ void loop(){
     int sensorRead = analogRead(A0);
     float humidity = map(sensorRead,WET_SOIL,DRY_SOIL,ONE_HUNDRED_PERCENT,ZERO_PERCENT); // tá em porcentagem
     Serial.println(humidity);
-    delay(1000);
     if (humidity < HUMIDITYBD) {
-      irrigate(2, SERVO1);
+      irrigate(3000);
       REPORT[2] = REPORT[2] + 1;
     }
     float secondsOn = millis() / 1000; 
@@ -116,7 +100,6 @@ void loop(){
       REPORT[0] = REPORT[0] + humidity;  
       REPORTDAYS = REPORTDAYS + 1;
     }
-    //delay(5000);
   }
 }
 
