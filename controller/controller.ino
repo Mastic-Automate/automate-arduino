@@ -10,7 +10,7 @@ int ONE_HUNDRED_PERCENT = 100;
 
 int WATER_BOMB = 3;
 int BUTTON = 6;
-int VAL = 0;      // variável para guardar o VALor lido
+int HUMIDITY_SENSOR = A0;      // variável para guardar o VALor lido
 int HUMIDITYBD = 0;
 float REPORTDAYS = 0;
 int REPORT[] = {0, 0, 0};
@@ -28,7 +28,7 @@ void setup() {
   BT.begin(9600); // HC-05 usually default baud-rate
   pinMode(WATER_BOMB, OUTPUT);  
   pinMode(BUTTON, INPUT);  
-  pinMode(A0, INPUT);
+  pinMode(HUMIDITY_SENSOR, INPUT);
   Serial.println("RODOU");
 }
 
@@ -82,7 +82,7 @@ void loop(){
   
   if (HUMIDITYBD) {
     //IMPORTANTE IMPLEMENTAR FUNÇÃO DE LER UMIDADE PARA FUNCIONAR ↙
-    int sensorRead = analogRead(A0);
+    int sensorRead = analogRead(HUMIDITY_SENSOR);
     float humidity = map(sensorRead,WET_SOIL,DRY_SOIL,ONE_HUNDRED_PERCENT,ZERO_PERCENT); // tá em porcentagem    
 
     if (drainTimer.IsTimeOut() && !irrigateTimer.IsEnabled()) {
