@@ -84,7 +84,7 @@ void loop(){
     //IMPORTANTE IMPLEMENTAR FUNÇÃO DE LER UMIDADE PARA FUNCIONAR ↙
     int sensorRead = analogRead(HUMIDITY_SENSOR);
     float humidity = map(sensorRead,WET_SOIL,DRY_SOIL,ONE_HUNDRED_PERCENT,ZERO_PERCENT); // tá em porcentagem    
-
+    Serial.println(humidity);
     if (drainTimer.IsTimeOut() && !irrigateTimer.IsEnabled()) {
       if (humidity < HUMIDITYBD) {
         digitalWrite(WATER_BOMB, HIGH);
