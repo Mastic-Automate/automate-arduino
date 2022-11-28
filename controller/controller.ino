@@ -1,20 +1,21 @@
 #include <ArduinoJson.h>
 #include <SoftwareSerial.h>
 #include "ctimer.h"
-#include <Wire.h>
+#include <Servo.h>
 
-int DRY_SOIL = 1023; //VALOR MEDIDO COM O SOLO SECO (VOCÊ PODE FAZER TESTES E AJUSTAR ESTE VALOR)
-int WET_SOIL = 224; //VALOR MEDIDO COM O SOLO MOLHADO (VOCÊ PODE FAZER TESTES E AJUSTAR ESTE VALOR)
-int ZERO_PERCENT = 0;
-int ONE_HUNDRED_PERCENT = 100;
+#define DRY_SOIL (1023) //VALOR MEDIDO COM O SOLO SECO (VOCÊ PODE FAZER TESTES E AJUSTAR ESTE VALOR)
+#define WET_SOIL (224) //VALOR MEDIDO COM O SOLO MOLHADO (VOCÊ PODE FAZER TESTES E AJUSTAR ESTE VALOR)
+#define ZERO_PERCENT (0)
+#define ONE_HUNDRED_PERCENT (100)
 
-int WATER_BOMB = 3;
-int BUTTON = 6;
-int HUMIDITY_SENSOR = A0;      // variável para guardar o VALor lido
+#define WATER_BOMB (3)
+#define SERVO_PIN (6)
+#define HUMIDITY_SENSOR (A0)      // variável para guardar o VALor lido
 int HUMIDITYBD = 0;
 float REPORTDAYS = 0;
 int REPORT[] = {0, 0, 0};
-const int CAPACITY = JSON_OBJECT_SIZE(18);
+Servo servo;
+const int CAPACITY = JSON_OBJECT_SIZE(7);
 SoftwareSerial BT(10, 11); // TX, RX | TX para enviar dados e RX para receber dados.]
 cTimer dayTimer(true);
 cTimer irrigateTimer(false);
@@ -24,10 +25,11 @@ void setup() {
   dayTimer.SetTimeOut(86400000); //Número de milissegundos que tem em um dia
   irrigateTimer.SetTimeOut(1000);
   drainTimer.SetTimeOut(5000);
+  servo.attach(SERVO_PIN);
+  servo.write(0);
   Serial.begin(9600);
   BT.begin(9600); // HC-05 usually default baud-rate
   pinMode(WATER_BOMB, OUTPUT);  
-  pinMode(BUTTON, INPUT);  
   pinMode(HUMIDITY_SENSOR, INPUT);
   Serial.println("RODOU");
 }
@@ -85,19 +87,27 @@ void loop(){
     int sensorRead = analogRead(HUMIDITY_SENSOR);
     float humidity = map(sensorRead,WET_SOIL,DRY_SOIL,ONE_HUNDRED_PERCENT,ZERO_PERCENT); // tá em porcentagem    
     Serial.println(humidity);
-    if (drainTimer.IsTimeOut() && !irrigateTimer.IsEnabled()) {
-      if (humidity < HUMIDITYBD) {
-        digitalWrite(WATER_BOMB, HIGH);
-        irrigateTimer.Enable(true);  
-        irrigateTimer.IsTimeOut(true);
-        REPORT[2] = REPORT[2] + 1;
+  
+    if (irrigateTimer.IsEnabled()) {
+       if (irrigateTimer.ReadTimeOut() > 500) {
+        servo.write(180);
+       } else {
+        servo.write(0);
+       }
+       
+       if (irrigateTimer.IsTimeOut(false)) {
+        digitalWrite(WATER_BOMB, LOW);
+        irrigateTimer.Enable(false);  
+        drainTimer.IsTimeOut(true);
       }
-    }
-
-    if (irrigateTimer.IsTimeOut(false) && irrigateTimer.IsEnabled()) {
-      digitalWrite(WATER_BOMB, LOW);
-      irrigateTimer.Enable(false);  
-      drainTimer.IsTimeOut(true);
+      
+    } else {
+        if (humidity < HUMIDITYBD && drainTimer.IsTimeOut()) {
+          digitalWrite(WATER_BOMB, HIGH);
+          irrigateTimer.Enable(true);  
+          irrigateTimer.IsTimeOut(true);
+          REPORT[2] = REPORT[2] + 1;
+        }
     }
     
     if (!REPORTDAYS || dayTimer.IsTimeOut(true)) {
